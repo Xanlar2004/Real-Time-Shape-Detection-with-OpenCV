@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <h1>Shape-Detection-with-OpenCV</h1>
+  <h1>Real Time Shape Detection with OpenCV</h1>
 </head>
 
 <body>
