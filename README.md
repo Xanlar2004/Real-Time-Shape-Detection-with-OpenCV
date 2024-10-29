@@ -14,8 +14,8 @@
   
   <h2>Requirements</h2>
   <p>Python Libraries:<br>
-     Numpy: For numerical computation.<br>
-     cv2 (OpenCV): For image processing and shape recognition.<br></p>
+     - Numpy: For numerical computations and handling arrays.<br>
+     - cv2 (OpenCV): For image processing and shape recognition.<br></p>
 
   <h2>Installation</h2>
   <p>To set up the environment:<br>
