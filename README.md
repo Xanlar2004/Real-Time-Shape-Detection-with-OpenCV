@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <h1>Shape-Detection-with-Open-CV-Python</h1>
+  <h1>Shape-Detection-with-OpenCV-Python</h1>
 </head>
 
 <body>
