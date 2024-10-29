@@ -18,10 +18,24 @@
      cv2 (OpenCV): For image processing and shape recognition.<br></p>
 
   <h2>Installation</h2>
-  <p>Set Up Python Environment: Ensure Python is installed.<br>
-      Install Packages: pip install numpy opencv-python<br>
-      Run the Code: Open the code in VS Code or any preferred IDE. Execute shapedetection.py.<br></p>
+  <p>To set up the environment:<br>
+     - Download and install Visual Studio Code (or your preferred IDE).<br>
+     - Ensure Python is installed.<br>
+     - Install required packages: <code>pip install numpy opencv-python</code><br>
+     - Open Visual Studio Code or any preferred IDE and create a file named <code>shape-detection.py</code>.<br>
+     - Run the application.<br></p>
      
+      
+  <h2>Code Explanation</h2>
+  <p>This Python script enables real-time shape detection through webcam input. Here is a breakdown of the code:<br>
+     1. Imports: Import required libraries (OpenCV for computer vision and NumPy for array handling).<br>
+     2. Webcam Initialization: Set up video capture using <code>cv2.VideoCapture(0)</code> and adjust frame width and height.<br>
+     3. Trackbar Setup: Create adjustable trackbars to set edge detection thresholds and minimum contour area dynamically.<br>
+     4. Contour Detection: Identify contours, approximate their shape, and draw bounding boxes on the detected shapes.<br>
+     5. Image Stacking: Stack the original, mask, and final images horizontally for display, allowing for easy shape analysis.<br>
+     6. Main Loop: Capture and process frames continuously, using edge detection, contour finding, and drawing functions for real-time detection.<br>
+     7. Exit Condition: Press 'q' to exit the program and release resources.<br></p>
+
 </body>
 
 </html>
