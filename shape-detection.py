@@ -1,87 +1,106 @@
 import cv2
 import numpy as np
 
-frameWidth = 640
-frameHeight = 480
-cap = cv2.VideoCapture(0)
-cap.set(3, frameWidth)
-cap.set(4, frameHeight)
+# Set the dimensions for the video frame
+frame_width = 640
+frame_height = 480
 
-def empty(a):
+# Capture video from the default camera
+video_capture = cv2.VideoCapture(0)
+video_capture.set(3, frame_width)
+video_capture.set(4, frame_height)
+
+# Placeholder function for trackbars
+def trackbar_placeholder(value):
     pass
 
-cv2.namedWindow("Parameters")
-cv2.resizeWindow("Parameters", 640, 240)
-cv2.createTrackbar("Threshold1", "Parameters", 23, 255, empty)
-cv2.createTrackbar("Threshold2", "Parameters", 20, 255, empty)
-cv2.createTrackbar("Area", "Parameters", 5000, 30000, empty)
+# Create a window for parameters and trackbars
+cv2.namedWindow("Control Panel")
+cv2.resizeWindow("Control Panel", frame_width, frame_height // 2)
+cv2.createTrackbar("Threshold1", "Control Panel", 23, 255, trackbar_placeholder)
+cv2.createTrackbar("Threshold2", "Control Panel", 20, 255, trackbar_placeholder)
+cv2.createTrackbar("Minimum Area", "Control Panel", 5000, 30000, trackbar_placeholder)
 
-def stackImages(scale, imgArray):
-    rows = len(imgArray)
-    cols = len(imgArray[0])
-    rowsAvailable = isinstance(imgArray[0], list)
-    width = imgArray[0][0].shape[1]
-    height = imgArray[0][0].shape[0]
-    if rowsAvailable:
-        for x in range(0, rows):
-            for y in range(0, cols):
-                if imgArray[x][y].shape[:2] == imgArray[0][0].shape[:2]:
-                    imgArray[x][y] = cv2.resize(imgArray[x][y], (0, 0), None, scale, scale)
+def combine_images(scale, images):
+    rows = len(images)
+    cols = len(images[0])
+    has_multiple_rows = isinstance(images[0], list)
+    width = images[0][0].shape[1]
+    height = images[0][0].shape[0]
+
+    if has_multiple_rows:
+        for i in range(rows):
+            for j in range(cols):
+                if images[i][j].shape[:2] == images[0][0].shape[:2]:
+                    images[i][j] = cv2.resize(images[i][j], (0, 0), None, scale, scale)
                 else:
-                    imgArray[x][y] = cv2.resize(imgArray[x][y],
-                                                 (imgArray[0][0].shape[1], imgArray[0][0].shape[0]),
-                                                 None, scale, scale)
-                if len(imgArray[x][y].shape) == 2:
-                    imgArray[x][y] = cv2.cvtColor(imgArray[x][y], cv2.COLOR_GRAY2BGR)
-        imageBlank = np.zeros((height, width, 3), np.uint8)
-        hor = [imageBlank] * rows
-        hor_con = [imageBlank] * rows
-        for x in range(0, rows):
-            hor[x] = np.hstack(imgArray[x])
-        ver = np.vstack(hor)
+                    images[i][j] = cv2.resize(images[i][j], (images[0][0].shape[1], images[0][0].shape[0]), None, scale, scale)
+                if len(images[i][j].shape) == 2:
+                    images[i][j] = cv2.cvtColor(images[i][j], cv2.COLOR_GRAY2BGR)
+        
+        blank_image = np.zeros((height, width, 3), np.uint8)
+        horizontal_images = [blank_image] * rows
+        for i in range(rows):
+            horizontal_images[i] = np.hstack(images[i])
+        final_image = np.vstack(horizontal_images)
     else:
-        for x in range(0, rows):
-            if imgArray[x].shape[:2] == imgArray[0].shape[:2]:
-                imgArray[x] = cv2.resize(imgArray[x], (0, 0), None, scale, scale)
+        for i in range(rows):
+            if images[i].shape[:2] == images[0].shape[:2]:
+                images[i] = cv2.resize(images[i], (0, 0), None, scale, scale)
             else:
-                imgArray[x] = cv2.resize(imgArray[x],
-                                         (imgArray[0].shape[1], imgArray[0].shape[0]),
-                                         None, scale, scale)
-            if len(imgArray[x].shape) == 2:
-                imgArray[x] = cv2.cvtColor(imgArray[x], cv2.COLOR_GRAY2BGR)
-        hor = np.hstack(imgArray)
-        ver = hor
-    return ver
+                images[i] = cv2.resize(images[i], (images[0].shape[1], images[0].shape[0]), None, scale, scale)
+            if len(images[i].shape) == 2:
+                images[i] = cv2.cvtColor(images[i], cv2.COLOR_GRAY2BGR)
+        
+        final_image = np.hstack(images)
 
-def getContours(img, imgContour):
-    contours, hierarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    for cnt in contours:
-        area = cv2.contourArea(cnt)
-        areaMin = cv2.getTrackbarPos("Area", "Parameters")
-        if area &gt; areaMin:
-            cv2.drawContours(imgContour, cnt, -1, (255, 0, 255), 7)
-            peri = cv2.arcLength(cnt, True)
-            approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
-            print(len(approx))
-            x, y, w, h = cv2.boundingRect(approx)
-            cv2.rectangle(imgContour, (x, y), (x + w, y + h), (0, 255, 0), 5)
-            cv2.putText(imgContour, "Points: " + str(len(approx)), (x + w + 20, y + 20),
-                        cv2.FONT_HERSHEY_COMPLEX, .7, (0, 255, 0), 2)
-            cv2.putText(imgContour, "Area: " + str(int(area)), (x + w + 20, y + 45),
-                        cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 255, 0), 2)
+    return final_image
 
+def find_contours(input_image, output_image):
+    contours, _ = cv2.findContours(input_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        min_area = cv2.getTrackbarPos("Minimum Area", "Control Panel")
+        if area > min_area:
+            cv2.drawContours(output_image, contour, -1, (255, 0, 255), 7)
+            perimeter = cv2.arcLength(contour, True)
+            approx_shape = cv2.approxPolyDP(contour, perimeter * 0.02, True)
+            x, y, width, height = cv2.boundingRect(approx_shape)
+            cv2.rectangle(output_image, (x, y), (x + width, y + height), (0, 255, 0), 5)
+            cv2.putText(output_image, f"Points: {len(approx_shape)}", (x + width + 20, y + 20), cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 255, 0), 2)
+            cv2.putText(output_image, f"Area: {int(area)}", (x + width + 20, y + 45), cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 255, 0), 2)
+
+# Main loop for processing video frames
 while True:
-    success, img = cap.read()
-    imgContour = img.copy()
-    imgBlur = cv2.GaussianBlur(img, (7, 7), 1)
-    imgGray = cv2.cvtColor(imgBlur, cv2.COLOR_BGR2GRAY)
-    threshold1 = cv2.getTrackbarPos("Threshold1", "Parameters")
-    threshold2 = cv2.getTrackbarPos("Threshold2", "Parameters")
-    imgCanny = cv2.Canny(imgGray, threshold1, threshold2)
+    success, frame = video_capture.read()
+    contour_frame = frame.copy()
+    blurred_frame = cv2.GaussianBlur(frame, (7, 7), 1)
+    gray_frame = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
+    
+    # Get threshold values from trackbars
+    threshold1 = cv2.getTrackbarPos("Threshold1", "Control Panel")
+    threshold2 = cv2.getTrackbarPos("Threshold2", "Control Panel")
+    
+    # Edge detection using Canny
+    edge_frame = cv2.Canny(gray_frame, threshold1, threshold2)
+    
+    # Dilate the edges to strengthen them
     kernel = np.ones((5, 5))
-    imgDil = cv2.dilate(imgCanny, kernel, iterations=1)
-    getContours(imgDil, imgContour)
-    imgStack = stackImages(0.8, ([img, imgCanny], [imgDil, imgContour]))
-    cv2.imshow("Result", imgStack)
-    if cv2.waitKey(1) &amp; 0xFF == ord('q'):
+    dilated_frame = cv2.dilate(edge_frame, kernel, iterations=1)
+    
+    # Find and draw contours
+    find_contours(dilated_frame, contour_frame)
+    
+    # Stack images for display
+    stacked_images = combine_images(0.8, ([frame, edge_frame], [dilated_frame, contour_frame]))
+    
+    # Show the result in a window
+    cv2.imshow("Output", stacked_images)
+    
+    # Exit the loop on 'q' key press
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+
+# Release resources
+video_capture.release()
+cv2.destroyAllWindows()
