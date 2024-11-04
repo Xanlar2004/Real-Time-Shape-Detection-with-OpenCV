@@ -5,22 +5,26 @@ import numpy as np
 frame_width = 640
 frame_height = 480
 
-# Capture video from the default camera
-video_capture = cv2.VideoCapture(0)
-video_capture.set(3, frame_width)
-video_capture.set(4, frame_height)
+# Initialize video capture from the specified camera index with given frame dimensions.
+def initialize_video_capture(camera_index=0):
+    video_capture = cv2.VideoCapture(camera_index)
+    video_capture.set(3, frame_width)
+    video_capture.set(4, frame_height)
+    return video_capture
 
-# Placeholder function for trackbars
+# Placeholder function for trackbar events. Does nothing but required for trackbar callbacks.
 def trackbar_placeholder(value):
     pass
 
-# Create a window for parameters and trackbars
-cv2.namedWindow("Control Panel")
-cv2.resizeWindow("Control Panel", frame_width, frame_height // 2)
-cv2.createTrackbar("Threshold1", "Control Panel", 23, 255, trackbar_placeholder)
-cv2.createTrackbar("Threshold2", "Control Panel", 20, 255, trackbar_placeholder)
-cv2.createTrackbar("Minimum Area", "Control Panel", 5000, 30000, trackbar_placeholder)
+# Create a control panel with trackbars for adjusting parameters.
+def create_control_panel():
+    cv2.namedWindow("Control Panel")
+    cv2.resizeWindow("Control Panel", frame_width, frame_height // 2)
+    cv2.createTrackbar("Threshold1", "Control Panel", 23, 255, trackbar_placeholder)
+    cv2.createTrackbar("Threshold2", "Control Panel", 20, 255, trackbar_placeholder)
+    cv2.createTrackbar("Minimum Area", "Control Panel", 5000, 30000, trackbar_placeholder)
 
+# Combine multiple images into a single image for display.
 def combine_images(scale, images):
     rows = len(images)
     cols = len(images[0])
@@ -56,6 +60,7 @@ def combine_images(scale, images):
 
     return final_image
 
+# Find and draw contours on the output image based on the input image.
 def find_contours(input_image, output_image):
     contours, _ = cv2.findContours(input_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     for contour in contours:
@@ -70,10 +75,8 @@ def find_contours(input_image, output_image):
             cv2.putText(output_image, f"Points: {len(approx_shape)}", (x + width + 20, y + 20), cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 255, 0), 2)
             cv2.putText(output_image, f"Area: {int(area)}", (x + width + 20, y + 45), cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 255, 0), 2)
 
-# Main loop for processing video frames
-while True:
-    success, frame = video_capture.read()
-    contour_frame = frame.copy()
+# Process a video frame: blur, convert to grayscale, and apply edge detection.
+def process_frame(frame):
     blurred_frame = cv2.GaussianBlur(frame, (7, 7), 1)
     gray_frame = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
     
@@ -88,19 +91,36 @@ while True:
     kernel = np.ones((5, 5))
     dilated_frame = cv2.dilate(edge_frame, kernel, iterations=1)
     
-    # Find and draw contours
-    find_contours(dilated_frame, contour_frame)
-    
-    # Stack images for display
-    stacked_images = combine_images(0.8, ([frame, edge_frame], [dilated_frame, contour_frame]))
-    
-    # Show the result in a window
-    cv2.imshow("Output", stacked_images)
-    
-    # Exit the loop on 'q' key press
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    return edge_frame, dilated_frame
 
-# Release resources
-video_capture.release()
-cv2.destroyAllWindows()
+# Main function to execute the video processing.
+def main():
+    video_capture = initialize_video_capture()
+    create_control_panel()
+
+    while True:
+        success, frame = video_capture.read()
+        if not success:
+            break
+        
+        edge_frame, dilated_frame = process_frame(frame)
+        contour_frame = frame.copy()
+        
+        find_contours(dilated_frame, contour_frame)
+        
+        # Stack images for display
+        stacked_images = combine_images(0.8, ([frame, edge_frame], [dilated_frame, contour_frame]))
+        
+        # Show the result in a window
+        cv2.imshow("Output", stacked_images)
+        
+        # Exit the loop on 'q' key press
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # Release resources
+    video_capture.release()
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()
